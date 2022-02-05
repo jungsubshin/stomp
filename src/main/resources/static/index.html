@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.2/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <title>Stomp test</title>
+</head>
+<body>
+<div>
+    <label>userId</label>
+    <input type="text" id="userId">
+    <label>roomId</label>
+    <input type="text" id="roomId">
+    <button id="connect">connect</button>
+</div>
+<div>
+    <label>message</label>
+    <input type="text" id="message">
+    <button id="send">send</button>
+</div>
+</body>
+
+<script>
+    $(function () {
+        let sockJs;
+        let stomp;
+
+        $('#connect').click(function () {
+            const userId = $('#userId').val()
+            const roomId = $('#roomId').val()
+
+            sockJs = new SockJS("/stomp-chat");
+            stomp = Stomp.over(sockJs);
+            stomp.debug = null // debug 주석 안보이게
+
+            stomp.connect({}, function () {
+                const data = {
+                    "roomId": roomId,
+                    "userId": userId,
+                    "message": userId + "님 접속"
+                }
+                stomp.send('/pub/chat/enter', {}, JSON.stringify(data));
+
+                stomp.subscribe("/sub/chat/" + roomId, function (chat) {
+                    const body = JSON.parse(chat.body)
+                    console.log(body.userId + "님의 메시지 : " + body.message);
+                })
+            });
+        });
+
+
+        $('#send').click(function () {
+            const userId = $('#userId').val()
+            const roomId = $('#roomId').val()
+            const message = $('#message').val()
+            const data = {
+                "roomId": roomId,
+                "userId": userId,
+                "message": message
+            }
+            stomp.send('/pub/chat/message', {}, JSON.stringify(data));
+        });
+    });
+
+</script>
+</html>
